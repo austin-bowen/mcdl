@@ -27,9 +27,9 @@ __version__  = '0.1'
 __depends__  = []
 __author__   = 'Austin Bowen <austin.bowen.314@gmail.com>'
 
+import os.path
 import requests
 from datetime import datetime
-from os.path import getmtime
 from wsgiref.handlers import format_date_time
 
 PROJECTS = [
@@ -61,7 +61,8 @@ def cmd_get(*args):
         return 2
     
     try:
-        existing_file_modt = format_date_time(getmtime(project_file['name']))
+        existing_file_modt = format_date_time(
+            os.path.getmtime(project_file['name']))
     except FileNotFoundError:
         existing_file_modt = None
     
@@ -159,7 +160,7 @@ if (__name__ == '__main__'):
         if (cmd != None):
             print('ERROR: Unrecognized command "'+cmd+'"')
         
-        filename = sys.argv[0]
+        filename = sys.argv[0].rpartition(os.path.sep)[2]
         print('Usage:')
         print('  {} get  <project> <file> - Download the project file'.format(
             filename))
