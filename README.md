@@ -2,15 +2,15 @@
 A script for downloading pre-built Minecraft software, such as Spigot and CraftBukkit.
 
 You can use mcdl to quickly download the latest .jar file for your favorite Minecraft server, grab a specific server API version for plugin development, etc. mcdl uses [Yive's Mirror](https://yivesmirror.com/) to download pre-built Minecraft software related to the following projects:
-- [Bukkit / CraftBukkit](https://bukkit.org/)
-- [BungeeCord](https://www.spigotmc.org/)
-- Cauldron
-- MCPC
-- [PaperSpigot](https://github.com/PaperMC/Paper)
-- [Spigot](https://www.spigotmc.org/)
-- [TacoSpigot](https://github.com/TacoSpigot/TacoSpigot)
-- [Thermos](https://cyberdynecc.github.io/Thermos/)
-- [Waterfall](https://github.com/WaterfallMC/Waterfall)
+* [Bukkit / CraftBukkit](https://bukkit.org/)
+* [BungeeCord](https://www.spigotmc.org/)
+* Cauldron
+* MCPC
+* [PaperSpigot](https://github.com/PaperMC/Paper)
+* [Spigot](https://www.spigotmc.org/)
+* [TacoSpigot](https://github.com/TacoSpigot/TacoSpigot)
+* [Thermos](https://cyberdynecc.github.io/Thermos/)
+* [Waterfall](https://github.com/WaterfallMC/Waterfall)
 
 ## Usage
 ```
@@ -72,4 +72,19 @@ $ cd .. ; rm -r mcdl    # Don't need the repo anymore
 You can now use mcdl.py from anywhere in your system.  To update mcdl.py, simply follow the installation instructions again.  To remove mcdl.py, run this:
 ```
 $ sudo rm -i `which mcdl.py`
+```
+
+## Setting up Automatic Updates
+You can use cron to automatically run mcdl.py to download the latest server file.  Here is a bare-bones example procedure for setting up cron to automatically download the latest Spigot .jar file every week:
+1. `$ cd /etc/cron.weekly/`
+1. `$ touch upgrade_spigot`
+1. `$ chmod +x upgrade_spigot`
+1. Edit the upgrade_spigot file with your favorite text editor and write something like:
+```
+#!/bin/sh
+
+# Downloads the latest Spigot .jar file
+
+cd /path/to/server/directory/
+mcdl.py get spigot spigot-latest.jar
 ```
