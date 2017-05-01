@@ -12,8 +12,6 @@ You can use mcdl to quickly download the latest .jar file for your favorite Mine
 - [Thermos](https://cyberdynecc.github.io/Thermos/)
 - [Waterfall](https://github.com/WaterfallMC/Waterfall)
 
-
-
 ## Usage
 ```
 mcdl.py get  <project> <file> - Download the project file
@@ -37,6 +35,7 @@ Done
 $ ls
 craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar
 ```
+
 #### Download the latest Spigot build
 ```
 $ mcdl.py get spigot spigot-latest.jar
@@ -51,6 +50,7 @@ $ mcdl.py get spigot spigot-latest.jar
 Downloading Spigot file "spigot-latest.jar"...
 Existing file spigot-latest.jar is already up-to-date
 ```
+
 #### List MCPC files
 ```
 $ mcdl.py list mcpc
@@ -59,4 +59,17 @@ craftbukkitplusplus-1.2.5-R4.1-MCPC-SNAPSHOT.jar
 mcpc-plus-1.4.7-R1.1-SNAPSHOT-f534-247.jar
 mcpc-plus-1.4.7-R1.1-SNAPSHOT-f534-authfix1.jar
 ...
+```
+
+## Installation
+If you want to be able to use the script from anywhere on your machine, then you need to copy the mcdl.py file to a directory in your path.  The best place to put it is most likely /usr/local/bin/.  The following steps show a typical installation procedure:
+```
+$ git clone https://github.com/SaltyHash/mcdl.git
+$ cd mcdl
+$ sudo cp mcdl.py /usr/local/bin/
+$ cd .. ; rm -r mcdl    # Don't need the repo anymore
+```
+You can now use mcdl.py from anywhere in your system.  To update mcdl.py, simply follow the installation instructions again.  To remove mcdl.py, run this:
+```
+$ sudo rm -i `which mcdl.py`
 ```
