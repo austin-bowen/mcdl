@@ -77,9 +77,9 @@ $ sudo rm -i `which mcdl.py`
 ## Setting up Automatic Updates
 You can use cron to automatically run mcdl.py to download the latest server file.  Here is a bare-bones example procedure for setting up cron to automatically download the latest Spigot .jar file every week:
 1. `$ cd /etc/cron.weekly/`
-1. `$ touch upgrade_spigot`
-1. `$ chmod +x upgrade_spigot`
-1. Edit the upgrade_spigot file with your favorite text editor and write something like:
+1. `$ sudo touch upgrade_spigot`
+1. `$ sudo chmod +x upgrade_spigot`
+1. Edit the upgrade_spigot file as super user with your favorite text editor and write something like:
 ```
 #!/bin/sh
 
@@ -87,4 +87,8 @@ You can use cron to automatically run mcdl.py to download the latest server file
 
 cd /path/to/server/directory/
 mcdl.py get spigot spigot-latest.jar
+
+# Optionally some command here to restart your server
+# ...
 ```
+cron will now run the upgrade_spigot file every week, downloading the latest Spigot .jar file into your server's directory.
