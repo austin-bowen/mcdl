@@ -175,6 +175,7 @@ if (__name__ == '__main__'):
         
         print('\nDownloads supplied and hosted by '+\
             'Yive\'s Mirror (https://yivesmirror.com/)')
+        print('View the source on GitHub (https://github.com/SaltyHash/mcdl)')
         
         sys.exit(0 if (cmd == None) else 1)
     
