@@ -1,7 +1,7 @@
 # mcdl - Minecraft Downloader
 A script for downloading pre-built Minecraft software, such as Spigot and CraftBukkit.
 
-You can use mcdl to quickly download the latest .jar file for your favorite Minecraft server, grab a specific server API version for plugin development, etc. mcdl uses [Yive's Mirror](https://yivesmirror.com/) to download pre-built Minecraft software related to the following projects:
+You can use mcdl to quickly download the latest .jar file for your favorite Minecraft server, grab a specific server API version for plugin development, etc. mcdl uses [Yive's Mirror](https://yivesmirror.com/) (no affiliation) to download pre-built Minecraft software related to the following projects:
 * [Bukkit / CraftBukkit](https://bukkit.org/)
 * [BungeeCord](https://www.spigotmc.org/)
 * Cauldron
