@@ -14,8 +14,8 @@ You can use mcdl to quickly download the latest .jar file for your favorite Mine
 
 ## Usage
 ```
-mcdl.py get  <project> <file> [dest] - Download the project file
-mcdl.py list <project>               - List the project files
+mcdl.py get  <project> <file> [dest]  - Download the project file
+mcdl.py list <project>                - List the project files
 ```
 
 ## Examples
@@ -43,8 +43,8 @@ $ mcdl.py get spigot spigot-latest.jar /path/to/server/spigot.jar
 Downloading Spigot file "spigot-latest.jar" ...
 Saving to file "/path/to/server/spigot.jar" ...
 Done
-$ ls
-spigot-latest.jar
+$ ls /path/to/server/
+spigot.jar
 ```
 Some time later (perhaps run by a cron job)...
 ```
@@ -97,7 +97,7 @@ You can use cron to automatically run mcdl.py to download the latest server file
 
 mcdl.py get spigot spigot-latest.jar /path/to/server/
 
-# Optionally some command here to restart your server
+# Optionally some command here to restart your Minecraft server
 # ...
 ```
 cron will now run the upgrade-spigot file every week, downloading the latest Spigot .jar file into your server's directory.
