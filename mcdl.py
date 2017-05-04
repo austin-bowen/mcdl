@@ -27,7 +27,7 @@ __version__  = '0.1'
 __depends__  = []
 __author__   = 'Austin Bowen <austin.bowen.314@gmail.com>'
 
-import os.path
+import os
 import requests
 from datetime import datetime
 from wsgiref.handlers import format_date_time
@@ -36,39 +36,62 @@ PROJECTS = [
     'Bukkit', 'BungeeCord', 'Cauldron', 'CraftBukkit', 'MCPC', 'PaperSpigot',
     'Spigot', 'TacoSpigot', 'Thermos',  'Waterfall',
 ]
+HTTP_USER_AGENT = __filename__+'/'+__version__
 
 def cmd_get(*args):
+    # Get the project name
     try:
         project = args[0]
     except IndexError:
         print('ERROR: No project given')
         return 1
     
+    # Get the project file name
     try:
-        project_file = args[1]
+        project_file_name = args[1]
     except IndexError:
         print('ERROR: No project file given')
         return 1
     
+    # Get the project file destination
     try:
-        project_file = get_project_files(project)[project_file]
-    except KeyError:
-        print('ERROR: {} file "{}" does not exist'.format(
-            get_project_title(project), project_file))
-        return 2
-    except ValueError:
-        print('ERROR: Project "'+project+'" does not exist')
+        file_dest = args[2]
+    except IndexError:
+        file_dest = project_file_name
+    file_dest = os.path.abspath(file_dest)
+    if os.path.isdir(file_dest):
+        file_dest = os.path.join(file_dest, project_file_name)
+    
+    # Make sure we have write permission for the file destination
+    if not os.access(os.path.dirname(file_dest), os.W_OK):
+        print('ERROR: Do not have write permission for destination "{}"'.format(
+            file_dest))
         return 2
     
+    # Get the project file info
     try:
-        existing_file_modt = format_date_time(
-            os.path.getmtime(project_file['name']))
+        project_file = get_project_files(project)[project_file_name]
+    except KeyError:
+        print('ERROR: {} file "{}" does not exist'.format(
+            get_project_title(project), project_file_name))
+        return 3
+    except ValueError:
+        print('ERROR: Project "'+project+'" does not exist')
+        return 3
+    
+    # Get file destination modification time
+    try:
+        existing_file_modt = format_date_time(os.path.getmtime(file_dest))
     except FileNotFoundError:
         existing_file_modt = None
     
-    print('Downloading {} file "{}"...'.format(
-        get_project_title(project), project_file['name']))
-    headers = {}
+    # Download the project file data
+    print('Downloading {} file "{}" ...'.format(
+        get_project_title(project), project_file_name))
+    ## Set up HTTP request headers
+    headers = {
+        'User-Agent': HTTP_USER_AGENT,
+    }
     if existing_file_modt:
         headers['If-Modified-Since'] = existing_file_modt
     req = requests.get(project_file['urls']['free'], headers=headers)
@@ -76,15 +99,18 @@ def cmd_get(*args):
         if not req:
             print('ERROR: Download failed (HTTP status code '+\
                 req.status_code+')')
-            return 3
+            return 4
         if (req.status_code == requests.codes.not_modified):
-            print('Existing file '+project_file['name']+' is already up-to-date')
+            print('File "'+file_dest+'" is already up-to-date')
             return 0
         project_file_data = req.content
     finally:
-        req.close(); del req
+        if req: req.close()
+        del req
     
-    with open(project_file['name'], 'wb') as f:
+    # Save the project file to the destination
+    print('Saving to file "'+file_dest+'" ...')
+    with open(file_dest, 'wb') as f:
         f.write(project_file_data)
     print('Done')
     return 0
@@ -125,7 +151,10 @@ def get_project_files(project):
     if project not in projects:
         raise ValueError('Project "'+project+'" does not exist')
     
-    req = requests.get('https://yivesmirror.com/api/'+project)
+    headers = {
+        'User-Agent': HTTP_USER_AGENT,
+    }
+    req = requests.get('https://yivesmirror.com/api/'+project, headers=headers)
     req_json = req.json()
     req.close(); del req
     
@@ -162,9 +191,9 @@ if (__name__ == '__main__'):
         
         filename = sys.argv[0].rpartition(os.path.sep)[2]
         print('Usage:')
-        print('  {} get  <project> <file> - Download the project file'.format(
+        print('  {} get  <project> <file> [dest]  - Download the project file'.format(
             filename))
-        print('  {} list <project>        - List the project files'.format(
+        print('  {} list <project>                - List the project files'.format(
             filename))
         
         print('\nProjects:')

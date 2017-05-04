@@ -14,8 +14,8 @@ You can use mcdl to quickly download the latest .jar file for your favorite Mine
 
 ## Usage
 ```
-mcdl.py get  <project> <file> - Download the project file
-mcdl.py list <project>        - List the project files
+mcdl.py get  <project> <file> [dest] - Download the project file
+mcdl.py list <project>               - List the project files
 ```
 
 ## Examples
@@ -30,25 +30,27 @@ craftbukkit-1.10-R0.1-SNAPSHOT-latest.jar
 craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar
 ...
 $ mcdl.py get craftbukkit craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar
-Downloading CraftBukkit file "craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar"...
+Downloading CraftBukkit file "craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar" ...
+Saving to file ".../craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar" ...
 Done
 $ ls
 craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar
 ```
 
-#### Download the latest Spigot build
+#### Download the latest Spigot build to a specific path
 ```
-$ mcdl.py get spigot spigot-latest.jar
-Downloading Spigot file "spigot-latest.jar"...
+$ mcdl.py get spigot spigot-latest.jar /path/to/server/spigot.jar
+Downloading Spigot file "spigot-latest.jar" ...
+Saving to file "/path/to/server/spigot.jar" ...
 Done
 $ ls
 spigot-latest.jar
 ```
 Some time later (perhaps run by a cron job)...
 ```
-$ mcdl.py get spigot spigot-latest.jar
-Downloading Spigot file "spigot-latest.jar"...
-Existing file spigot-latest.jar is already up-to-date
+$ mcdl.py get spigot spigot-latest.jar /path/to/server/spigot.jar
+Downloading Spigot file "spigot-latest.jar" ...
+File "/path/to/server/spigot.jar" is already up-to-date
 ```
 
 #### List MCPC files
@@ -93,8 +95,7 @@ You can use cron to automatically run mcdl.py to download the latest server file
 
 # Downloads the latest Spigot .jar file
 
-cd /path/to/server/directory/
-mcdl.py get spigot spigot-latest.jar
+mcdl.py get spigot spigot-latest.jar /path/to/server/
 
 # Optionally some command here to restart your server
 # ...
