@@ -63,7 +63,9 @@ mcpc-plus-1.4.7-R1.1-SNAPSHOT-f534-authfix1.jar
 ...
 ```
 
-## Installation
+## Installation (Linux)
+Note: mcdl.py was written for Linux and has not yet been tested on Windows or Mac.
+
 If you want to be able to use the script from anywhere on your machine, then you need to copy the mcdl.py file to a directory in your path.  The best place to put it is most likely /usr/local/bin/.  The following steps show a typical installation procedure:
 ```
 $ sudo apt-get install python3-requests
@@ -84,7 +86,7 @@ $ sudo rm -i /usr/local/bin/mcdl.py
 $ sudo rm -r /usr/local/bin/mcdl/
 ```
 
-## Setting up Automatic Updates
+## Use Case: Setting up Automatic Updates (Linux)
 You can use cron to automatically run mcdl.py to download the latest server file.  Here is a bare-bones example procedure for setting up cron to automatically download the latest Spigot .jar file every week:
 1. `$ cd /etc/cron.weekly/`
 1. `$ sudo touch upgrade-spigot`
