@@ -24,133 +24,227 @@
 
 __filename__ = 'mcdl.py'
 __version__  = '0.1'
-__depends__  = []
 __author__   = 'Austin Bowen <austin.bowen.314@gmail.com>'
 
 import os
 import requests
-from datetime import datetime
+from six import print_
 from wsgiref.handlers import format_date_time
 
-PROJECTS = [
-    'Bukkit', 'BungeeCord', 'Cauldron', 'CraftBukkit', 'MCPC', 'PaperSpigot',
-    'Spigot', 'TacoSpigot', 'Thermos',  'Waterfall',
-]
+# Return codes
+SUCCESS = 0
+ERROR_INVALID_ARGS    = 1
+ERROR_FILE_PERMS      = 2
+ERROR_DOWNLOAD_FAILED = 3
+
 HTTP_USER_AGENT = __filename__+'/'+__version__
+PROJECTS = [
+    'Bukkit', 'BungeeCord', 'Cauldron', 'CraftBukkit', 'Genisys', 'HexaCord',
+    'MCPC', 'Nukkit', 'PaperSpigot', 'Spigot', 'TacoSpigot', 'Thermos',
+    'Waterfall',
+]
 
 def cmd_get(*args):
+    '''Handles command: get <project> <file> [dest]'''
     # Get the project name
     try:
         project = args[0]
     except IndexError:
-        print('ERROR: No project given')
-        return 1
+        print_('ERROR: No project given\n')
+        print_projects()
+        return ERROR_INVALID_ARGS
     
     # Get the project file name
     try:
         project_file_name = args[1]
     except IndexError:
-        print('ERROR: No project file given')
-        return 1
+        print_('ERROR: No project file given')
+        return ERROR_INVALID_ARGS
     
     # Get the project file destination
     try:
         file_dest = args[2]
     except IndexError:
-        file_dest = project_file_name
-    file_dest = os.path.abspath(file_dest)
+        file_dest = os.curdir
     if os.path.isdir(file_dest):
         file_dest = os.path.join(file_dest, project_file_name)
     
-    # Make sure we have write permission for the file destination
-    if not os.access(os.path.dirname(file_dest), os.W_OK):
-        print('ERROR: Do not have write permission for destination "{}"'.format(
-            file_dest))
-        return 2
+    # Get project files
+    project_files = get_project_files(project)
+    # Project DNE?
+    if (project_files == None):
+        print_('ERROR: Project "'+project+'" does not exist\n')
+        print_projects()
+        return ERROR_INVALID_ARGS
     
-    # Get the project file info
-    try:
-        project_file = get_project_files(project)[project_file_name]
-    except KeyError:
-        print('ERROR: {} file "{}" does not exist'.format(
+    # Get project file
+    project_file = get_project_file_named(project_file_name, project_files)
+    # Project file DNE?
+    if (project_file == None):
+        print_('ERROR: {} file "{}" does not exist'.format(
             get_project_title(project), project_file_name))
-        return 3
-    except ValueError:
-        print('ERROR: Project "'+project+'" does not exist')
-        return 3
+        return ERROR_INVALID_ARGS
     
-    # Get file destination modification time
+    # Download and save the project file and return the result
+    return download_project_file(project_file, file_dest)
+
+def cmd_list(*args):
+    '''Handles command: list <project>'''
+    # Get project
     try:
-        existing_file_modt = format_date_time(os.path.getmtime(file_dest))
-    except FileNotFoundError:
-        existing_file_modt = None
+        project = args[0]
+    except IndexError:
+        print_('ERROR: No project given\n')
+        print_projects()
+        return ERROR_INVALID_ARGS
     
-    # Download the project file data
-    print('Downloading {} file "{}" ...'.format(
-        get_project_title(project), project_file_name))
-    ## Set up HTTP request headers
+    # Get project files
+    project_files = get_project_files(project)
+    # Project DNE?
+    if (project_files == None):
+        print_('ERROR: Project "'+project+'" does not exist\n')
+        print_projects()
+        return ERROR_INVALID_ARGS
+    
+    # Sort project files by version ascending
+    from packaging.version import parse as parse_version
+    project_files = sorted(project_files,
+        key=lambda pf: parse_version(pf['name']))
+    del parse_version
+    
+    # Build and print table of files
+    rows = [[
+        '{} Files'.format(get_project_title(project)),
+        'MC Ver',
+        'Size',
+    ]]
+    for project_file in project_files:
+        rows.append([
+            project_file['name'],
+            project_file['version']['minecraft'],
+            project_file['size']['human'],
+        ])
+    from terminaltables import AsciiTable
+    table = AsciiTable(rows)
+    table.outer_border = False
+    table.padding_left = table.padding_right = 2
+    print_(table.table)
+    
+    return SUCCESS
+
+def download_project_file(project_file, file_dest, force=False):
+    '''Downloads the project file content and saves it to the destination.
+    If the destination is a directory and not a file name, then the project
+    file content is saved to a file named using the project file name.
+    If the project file is not newer than the file at the destination, then
+    the project file content is not downloaded (unless forced).
+    
+    Prints progress and errors.
+    
+    Returns: SUCCESS, ERROR_FILE_PERMS, or ERROR_DOWNLOAD_FAILED.
+    '''
+    # File destination is a directory?  Append the project file name.
+    if os.path.isdir(file_dest):
+        file_dest = os.path.join(file_dest, project_file['name'])
+    
+    # Do not have write permission for the file destination?
+    if not os.access(os.path.dirname(os.path.abspath(file_dest)), os.W_OK):
+        print_('ERROR: Do not have write permission for destination "{}"'.format(
+            file_dest))
+        return ERROR_FILE_PERMS
+    
+    # Set up HTTP request headers
     headers = {
         'User-Agent': HTTP_USER_AGENT,
     }
-    if existing_file_modt:
-        headers['If-Modified-Since'] = existing_file_modt
+    if not force:
+        try:
+            headers['If-Modified-Since'] = \
+                format_date_time(os.path.getmtime(file_dest))
+        except FileNotFoundError:
+            pass
+    
+    # Download the project file data
+    print_('Downloading {} file "{}" ({})...  '.format(project_file['project'],
+        project_file['name'], project_file['size']['human']),
+        end='', flush=True)
     req = requests.get(project_file['urls']['free'], headers=headers)
+    del headers
+    print_('Done.')
     try:
         if not req:
-            print('ERROR: Download failed (HTTP status code '+\
+            print_('ERROR: Download failed (HTTP status code '+\
                 req.status_code+')')
-            return 4
+            return ERROR_DOWNLOAD_FAILED
         if (req.status_code == requests.codes.not_modified):
-            print('File "'+file_dest+'" is already up-to-date')
-            return 0
+            print_('File "'+file_dest+'" is already up-to-date')
+            return SUCCESS
         project_file_data = req.content
     finally:
         if req: req.close()
         del req
     
+    # Make sure the downloaded project file size matches the expected size
+    actual_size   = len(project_file_data)
+    expected_size = project_file['size']['bytes']
+    if (actual_size != expected_size):
+        msg = 'WARNING: Downloaded file size ({}B) does not match '+\
+            'expected file size ({}B)'
+        print_(msg.format(actual_size, expected_size))
+        del msg
+    del actual_size, expected_size
+    
     # Save the project file to the destination
-    print('Saving to file "'+file_dest+'" ...')
+    print_('Saving to file "'+file_dest+'"...  ', end='', flush=True)
     with open(file_dest, 'wb') as f:
         f.write(project_file_data)
-    print('Done')
-    return 0
+    print_('Done.')
+    
+    return SUCCESS
 
-def cmd_list(*args):
-    try:
-        project = args[0]
-    except IndexError:
-        print('ERROR: No project given')
-        return 1
-    
-    try:
-        project_files = get_project_files(project)
-    except ValueError:
-        print('ERROR: Project "'+project+'" does not exist')
-        return 1
-    
-    project_files = get_project_files(project)
-    project_files = list(project_files.keys())
-    project_files.sort()
-    print('\tAvailable {} Files:'.format(get_project_title(project)))
-    for pf in project_files: print(pf)
-    return 0
+def get_project_file_named(name, project_files):
+    '''Returns the project file for the given project, or None if either
+    the project or project file does not exist.
+    '''
+    for project_file in project_files:
+        if (project_file['name'] == name): return project_file
+    return None
 
 def get_project_files(project):
-    '''Returns a dict of the files available for the given project.
+    '''Returns a list of files available for the given project,
+    or None if the project does not exist.
     
     Example:
     >>> get_project_files('spigot')
-    {
-        'spigot-latest.jar': {...},
-        'spigot-1.4.7-R1.1-SNAPSHOT.jar': {...},
+    [
+        {
+            'name'   : 'spigot-latest.jar',
+            'project': 'Spigot',
+            'version': {
+                'minecraft': '...'
+            },
+            'size': {
+                'human': '23.40MB',
+                'bytes': 24539208
+            },
+            'date': {
+                'human': 'March 24, 2017',
+                'epoch': 1493893504,
+            },
+            'urls': {
+                'paid': 'http://...',
+                'free': 'http://...'
+            }
+        },
         ...,
-    }
+    ]
     '''
-    project  = project.lower()
-    projects = {p.lower() for p in PROJECTS}
-    if project not in projects:
-        raise ValueError('Project "'+project+'" does not exist')
+    # Get project title
+    project_title = get_project_title(project)
+    # Project DNE?
+    if not project_title: return None
     
+    # Download list of project files
     headers = {
         'User-Agent': HTTP_USER_AGENT,
     }
@@ -158,14 +252,16 @@ def get_project_files(project):
     req_json = req.json()
     req.close(); del req
     
-    project_files = {}
+    # Build and return list of project files
+    project_files = []
     for entry in req_json:
-        filename = list(entry.keys())[0]
-        project_files[filename] = entry[filename]
+        project_file = list(entry.values())[0]
+        project_file['project'] = project_title
+        project_files.append(project_file)
     return project_files
 
 def get_project_title(project):
-    '''Simply returns the project name's titled version.
+    '''Returns the project name's titled version, or None if project DNE.
     
     Example:
     >>> get_project_title('bungeecord')
@@ -174,40 +270,55 @@ def get_project_title(project):
     project = project.lower()
     for title in PROJECTS:
         if (project == title.lower()): return title
-    return project.title()
+    return None
+
+def print_projects():
+    print_('Projects:')
+    for p in PROJECTS: print_('  '+p)
+
+def project_exists(project):
+    '''Returns True if the given project is in PROJECTS (case insensitive).'''
+    return project.lower() in {p.lower() for p in PROJECTS}
 
 if (__name__ == '__main__'):
     import sys
     
-    cmd = None
+    # Get command
     try:
         cmd = sys.argv[1].lower()
     except IndexError:
-        pass
+        cmd = None
     
+    # Command not given or not recognized?
     if cmd not in {'get', 'list'}:
-        if (cmd != None):
-            print('ERROR: Unrecognized command "'+cmd+'"')
+        # Command not recognized?
+        if (cmd != None): print_('ERROR: Unrecognized command "'+cmd+'"')
         
-        filename = sys.argv[0].rpartition(os.path.sep)[2]
-        print('Usage:')
-        print('  {} get  <project> <file> [dest]  - Download the project file'.format(
-            filename))
-        print('  {} list <project>                - List the project files'.format(
-            filename))
+        # Print usage
+        filename = os.path.basename(sys.argv[0])
+        print_('Usage:')
+        print_('  {} get  <project> <file> [dest]'.format(filename) +\
+              '  - Download the project file')
+        print_('  {} list <project>              '.format(filename) +\
+              '  - List the project files')
         
-        print('\nProjects:')
-        for p in PROJECTS: print('  '+p)
+        print_()
+        print_projects()
         
-        print('\nExample: Downloading the latest Spigot build')
-        print('  $ {} get spigot spigot-latest.jar'.format(filename))
+        print_('\nExample: Downloading the latest Spigot build')
+        print_('  $ {} get spigot spigot-latest.jar'.format(filename))
         
-        print('\nDownloads supplied and hosted by '+\
-            'Yive\'s Mirror (https://yivesmirror.com/)')
-        print('View the source on GitHub (https://github.com/SaltyHash/mcdl)')
+        print_('\nDownloads hosted by '+\
+            'Yive\'s Mirror (no affiliation): https://yivesmirror.com/')
+        print_('View project source on GitHub: https://github.com/SaltyHash/mcdl')
         
-        sys.exit(0 if (cmd == None) else 1)
+        sys.exit(SUCCESS if (cmd == None) else ERROR_INVALID_ARGS)
     
-    cmd_func = globals()['cmd_'+cmd]
-    result   = cmd_func(*sys.argv[2:])
-    sys.exit(result or 0)
+    # Get the handler function for the command and execute it
+    try:
+        cmd_func = globals()['cmd_'+cmd.replace('-', '_')]
+    except KeyError:
+        raise RuntimeError(
+            'Failed to find handler function for command "'+cmd+'"')
+    result = cmd_func(*sys.argv[2:])
+    sys.exit(result)

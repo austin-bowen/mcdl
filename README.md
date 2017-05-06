@@ -1,11 +1,17 @@
 # mcdl - Minecraft Downloader
 A script for downloading pre-built Minecraft software, such as Spigot and CraftBukkit.
 
-You can use mcdl to quickly download the latest .jar file for your favorite Minecraft server, grab a specific server API version for plugin development, etc. mcdl uses [Yive's Mirror](https://yivesmirror.com/) (no affiliation) to download pre-built Minecraft software related to the following projects:
+You can use mcdl to quickly download the latest .jar file for your favorite
+Minecraft server, grab a specific server API version for plugin development,
+etc. mcdl uses [Yive's Mirror](https://yivesmirror.com/) (no affiliation)
+to download pre-built Minecraft software related to the following projects:
 * [Bukkit / CraftBukkit](https://bukkit.org/)
 * [BungeeCord](https://www.spigotmc.org/)
 * Cauldron
+* [Genisys](https://itxtech.org/genisys/)
+* HexaCord
 * MCPC
+* [Nukkit](https://nukkit.io/)
 * [PaperSpigot](https://github.com/PaperMC/Paper)
 * [Spigot](https://www.spigotmc.org/)
 * [TacoSpigot](https://github.com/TacoSpigot/TacoSpigot)
@@ -14,8 +20,8 @@ You can use mcdl to quickly download the latest .jar file for your favorite Mine
 
 ## Usage
 ```
-mcdl.py get  <project> <file> [dest]  - Download the project file
-mcdl.py list <project>                - List the project files
+mcdl.py get <project> <file> [dest]  - Download the project file
+mcdl.py list <project>               - List the project files
 ```
 
 ## Examples
@@ -30,26 +36,24 @@ craftbukkit-1.10-R0.1-SNAPSHOT-latest.jar
 craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar
 ...
 $ mcdl.py get craftbukkit craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar
-Downloading CraftBukkit file "craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar" ...
-Saving to file ".../craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar" ...
-Done
+Downloading CraftBukkit file "craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar"...  Done.
+Saving to file "./craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar"...  Done.
 $ ls
 craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar
 ```
 
-#### Download the latest Spigot build to a specific path
+#### Download a Spigot build to a specific path
 ```
 $ mcdl.py get spigot spigot-latest.jar /path/to/server/spigot.jar
-Downloading Spigot file "spigot-latest.jar" ...
-Saving to file "/path/to/server/spigot.jar" ...
-Done
+Downloading Spigot file "spigot-latest.jar"...  Done.
+Saving to file "/path/to/server/spigot.jar"...  Done.
 $ ls /path/to/server/
 spigot.jar
 ```
 Some time later (perhaps run by a cron job)...
 ```
 $ mcdl.py get spigot spigot-latest.jar /path/to/server/spigot.jar
-Downloading Spigot file "spigot-latest.jar" ...
+Downloading Spigot file "spigot-latest.jar"...  Done.
 File "/path/to/server/spigot.jar" is already up-to-date
 ```
 
@@ -66,7 +70,10 @@ mcpc-plus-1.4.7-R1.1-SNAPSHOT-f534-authfix1.jar
 ## Installation (Linux)
 Note: mcdl.py was written for Linux and has not yet been tested on Windows or Mac.
 
-If you want to be able to use the script from anywhere on your machine, then you need to copy the mcdl.py file to a directory in your path.  The best place to put it is most likely /usr/local/bin/.  The following steps show a typical installation procedure:
+If you want to be able to use the script from anywhere on your machine, then
+you need to copy the mcdl.py file to a directory in your path.  The best place
+to put it is most likely /usr/local/bin/.  The following steps show a typical
+installation procedure:
 ```
 $ sudo apt-get install python3-requests
 $ cd /usr/local/src/
@@ -87,19 +94,26 @@ $ sudo rm -r /usr/local/bin/mcdl/
 ```
 
 ## Use Case: Setting up Automatic Updates (Linux)
-You can use cron to automatically run mcdl.py to download the latest server file.  Here is a bare-bones example procedure for setting up cron to automatically download the latest Spigot .jar file every week:
+You can use cron to automatically run mcdl.py to download the latest server file.
+Here is a bare-bones example procedure for setting up cron to automatically
+download the latest CraftBukkit .jar file every week:
 1. `$ cd /etc/cron.weekly/`
-1. `$ sudo touch upgrade-spigot`
-1. `$ sudo chmod +x upgrade-spigot`
-1. Edit the upgrade-spigot file as super user with your favorite text editor and write something like:
+1. `$ sudo touch upgrade-craftbukkit`
+1. `$ sudo chmod +x upgrade-craftbukkit`
+1. Edit the upgrade-craftbukkit file as super user with your favorite text
+editor and write something like this:
 ```
 #!/bin/sh
 
-# Downloads the latest Spigot .jar file
+# Downloads the latest CraftBukkit .jar file
 
-mcdl.py get spigot spigot-latest.jar /path/to/server/
+mcdl.py get craftbukkit craftbukkit-latest.jar /path/to/server/craftbukkit.jar
 
 # Optionally some command here to restart your Minecraft server
 # ...
 ```
-cron will now run the upgrade-spigot file every week, downloading the latest Spigot .jar file into your server's directory.
+cron will now run the upgrade-craftbukkit file every week, downloading the
+latest CraftBukkit .jar file into your server's directory.
+
+## To-do
+* Download list of available projects rather than hard-coding them.
