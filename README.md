@@ -20,32 +20,34 @@ to download pre-built Minecraft software related to the following projects:
 
 ## Usage
 ```
-mcdl.py get <project> <file> [dest]  - Download the project file
-mcdl.py list <project>               - List the project files
+mcdl.py get  <project> <file> [dest]  - Download the project file
+mcdl.py list <project>                - List the project files
 ```
 
 ## Examples
 #### Find and download a specific version of CraftBukkit
 ```
 $ mcdl.py list craftbukkit
-        Available CraftBukkit Files:
-craftbukkit-0.0.1-SNAPSHOT.1000.jar
-craftbukkit-0.0.1-SNAPSHOT.1060.jar
-craftbukkit-1-6-6 beta.jar
-craftbukkit-1.10-R0.1-SNAPSHOT-latest.jar
-craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar
-...
-$ mcdl.py get craftbukkit craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar
-Downloading CraftBukkit file "craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar"...  Done.
-Saving to file "./craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar"...  Done.
+  CraftBukkit Files                              |  MC Ver      |  Size
+-------------------------------------------------+--------------+------------
+  craftbukkit-latest.jar                         |  Latest      |  20.78MB
+  craftbukkit-0.0.1-SNAPSHOT.1000.jar            |  1.7.3 Beta  |  8.11MB
+  craftbukkit-0.0.1-SNAPSHOT.1060.jar            |  1.7.3 Beta  |  8.14MB
+  ...
+  craftbukkit-1.11-R0.1-SNAPSHOT.jar             |  1.11        |  19.05MB
+  craftbukkit-1.11.2-R0.1-SNAPSHOT.jar           |  1.11.2      |  20.79MB
+  craftbukkit.src.zip                            |  Unknown     |  880.63kB
+$ mcdl.py get craftbukkit craftbukkit-1.11.2-R0.1-SNAPSHOT.jar
+Downloading CraftBukkit file "craftbukkit-1.11.2-R0.1-SNAPSHOT.jar" (20.79MB)...  Done.
+Saving to file "./craftbukkit-1.11.2-R0.1-SNAPSHOT.jar"...  Done.
 $ ls
-craftbukkit-1.10.2-R0.1-SNAPSHOT-latest.jar
+craftbukkit-1.11.2-R0.1-SNAPSHOT.jar
 ```
 
 #### Download a Spigot build to a specific path
 ```
 $ mcdl.py get spigot spigot-latest.jar /path/to/server/spigot.jar
-Downloading Spigot file "spigot-latest.jar"...  Done.
+Downloading Spigot file "spigot-latest.jar" (23.40MB)...  Done.
 Saving to file "/path/to/server/spigot.jar"...  Done.
 $ ls /path/to/server/
 spigot.jar
@@ -53,18 +55,8 @@ spigot.jar
 Some time later (perhaps run by a cron job)...
 ```
 $ mcdl.py get spigot spigot-latest.jar /path/to/server/spigot.jar
-Downloading Spigot file "spigot-latest.jar"...  Done.
+Downloading Spigot file "spigot-latest.jar" (23.40MB)...  Done.
 File "/path/to/server/spigot.jar" is already up-to-date
-```
-
-#### List MCPC files
-```
-$ mcdl.py list mcpc
-        Available MCPC Files:
-craftbukkitplusplus-1.2.5-R4.1-MCPC-SNAPSHOT.jar
-mcpc-plus-1.4.7-R1.1-SNAPSHOT-f534-247.jar
-mcpc-plus-1.4.7-R1.1-SNAPSHOT-f534-authfix1.jar
-...
 ```
 
 ## Installation (Linux)
@@ -75,22 +67,22 @@ you need to copy the mcdl.py file to a directory in your path.  The best place
 to put it is most likely /usr/local/bin/.  The following steps show a typical
 installation procedure:
 ```
-$ sudo apt-get install python3-requests
 $ cd /usr/local/src/
-$ git clone https://github.com/SaltyHash/mcdl.git
+$ sudo git clone https://github.com/SaltyHash/mcdl.git
 $ cd mcdl
+$ sudo pip3 install -r requirements.txt
 $ sudo cp mcdl.py /usr/local/bin/
 ```
 You can now use mcdl.py from anywhere in your system.  To update mcdl.py:
 ```
 $ cd /usr/local/src/mcdl/
-$ git pull
+$ sudo git pull
 $ sudo cp mcdl.py /usr/local/bin/
 ```
-To remove mcdl.py and its repo from your system, run this:
+To remove mcdl.py and its repo from your system, respectively, run this:
 ```
 $ sudo rm -i /usr/local/bin/mcdl.py
-$ sudo rm -r /usr/local/bin/mcdl/
+$ sudo rm -r /usr/local/src/mcdl/
 ```
 
 ## Use Case: Setting up Automatic Updates (Linux)
