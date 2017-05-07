@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Copyright (c) 2017 Austin Bowen
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -164,25 +162,44 @@ def download_project_file(project_file, file_dest, force=False):
         except FileNotFoundError:
             pass
     
-    # Download the project file data
-    print_('Downloading {} file "{}" ({})...  '.format(project_file['project'],
-        project_file['name'], project_file['size']['human']),
-        end='', flush=True)
-    req = requests.get(project_file['urls']['free'], headers=headers)
+    # Start downloading the project file data
+    print_('Downloading {} file "{}"...  '.format(
+        project_file['project'], project_file['name']))
+    req = requests.get(project_file['urls']['free'],
+        headers=headers, stream=True)
     del headers
-    print_('Done.')
-    try:
-        if not req:
-            print_('ERROR: Download failed (HTTP status code '+\
-                req.status_code+')')
-            return ERROR_DOWNLOAD_FAILED
-        if (req.status_code == requests.codes.not_modified):
-            print_('File "'+file_dest+'" is already up-to-date')
-            return SUCCESS
-        project_file_data = req.content
-    finally:
-        if req: req.close()
-        del req
+    
+    # Failed to create request?
+    if not req:
+        print_('ERROR: Download failed (HTTP status code '+\
+            req.status_code+')')
+        return ERROR_DOWNLOAD_FAILED
+    
+    # File at server is not newer than local file?
+    if (req.status_code == requests.codes.not_modified):
+        print_('File "'+file_dest+'" is already up-to-date')
+        return SUCCESS
+    
+    # Print the progress
+    from progress.bar import IncrementalBar
+    from time import time as wall_time
+    project_file_data = bytearray()
+    bar = IncrementalBar(' ', max=project_file['size']['bytes'],
+        suffix='%(percent)d%% of '+project_file['size']['human']+\
+            ' (ETA %(eta_td)s)')
+    t0 = 0
+    for chunk in req.iter_content(chunk_size=8192):
+        # Add new chunk to the project file data
+        project_file_data.extend(chunk)
+        
+        # Update progress bar every 0.5 seconds or at end of download
+        t1 = wall_time()
+        if ((t1-t0) >= 0.5 or len(chunk) < 8192):
+            bar.goto(len(project_file_data))
+            t0 = t1
+    bar.finish()
+    req.close()
+    del bar, req, t0, t1
     
     # Make sure the downloaded project file size matches the expected size
     actual_size   = len(project_file_data)
@@ -280,7 +297,7 @@ def project_exists(project):
     '''Returns True if the given project is in PROJECTS (case insensitive).'''
     return project.lower() in {p.lower() for p in PROJECTS}
 
-if (__name__ == '__main__'):
+def main():
     import sys
     
     # Get command
@@ -298,9 +315,9 @@ if (__name__ == '__main__'):
         filename = os.path.basename(sys.argv[0])
         print_('Usage:')
         print_('  {} get  <project> <file> [dest]'.format(filename) +\
-              '  - Download the project file')
+              '  Download the project file')
         print_('  {} list <project>              '.format(filename) +\
-              '  - List the project files')
+              '  List the project files')
         
         print_()
         print_projects()
@@ -322,3 +339,6 @@ if (__name__ == '__main__'):
             'Failed to find handler function for command "'+cmd+'"')
     result = cmd_func(*sys.argv[2:])
     sys.exit(result)
+
+if (__name__ == '__main__'):
+    main()
