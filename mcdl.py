@@ -21,12 +21,16 @@
 '''mcdl.py - A script for downloading pre-built Minecraft software'''
 
 __filename__ = 'mcdl.py'
-__version__  = '0.1'
+__version__  = '0.1.0'
 __author__   = 'Austin Bowen <austin.bowen.314@gmail.com>'
 
 import os
 import requests
+from packaging.version import parse as parse_version
+from progress.bar import IncrementalBar
 from six import print_
+from terminaltables import AsciiTable
+from time import time as wall_time
 from wsgiref.handlers import format_date_time
 
 # Return codes
@@ -105,10 +109,8 @@ def cmd_list(*args):
         return ERROR_INVALID_ARGS
     
     # Sort project files by version ascending
-    from packaging.version import parse as parse_version
     project_files = sorted(project_files,
         key=lambda pf: parse_version(pf['name']))
-    del parse_version
     
     # Build and print table of files
     rows = [[
@@ -122,7 +124,6 @@ def cmd_list(*args):
             project_file['version']['minecraft'],
             project_file['size']['human'],
         ])
-    from terminaltables import AsciiTable
     table = AsciiTable(rows)
     table.outer_border = False
     table.padding_left = table.padding_right = 2
@@ -181,8 +182,6 @@ def download_project_file(project_file, file_dest, force=False):
         return SUCCESS
     
     # Print the progress
-    from progress.bar import IncrementalBar
-    from time import time as wall_time
     project_file_data = bytearray()
     bar = IncrementalBar(' ', max=project_file['size']['bytes'],
         suffix='%(percent)d%% of '+project_file['size']['human']+\
