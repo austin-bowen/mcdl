@@ -41,8 +41,21 @@ ERROR_DOWNLOAD_FAILED = 3
 
 HTTP_USER_AGENT = __filename__+'/'+__version__
 PROJECTS = [
-    'Bukkit', 'BungeeCord', 'Cauldron', 'CraftBukkit', 'Genisys', 'HexaCord',
-    'MCPC', 'Nukkit', 'PaperSpigot', 'Spigot', 'TacoSpigot', 'Thermos',
+    'Bukkit',
+    'BungeeCord',
+    'Cauldron',
+    'CraftBukkit',
+    'Genisys',
+    'Glowstone',
+    'HexaCord',
+    'HOSE',
+    'MCPC',
+    'Nukkit',
+    'PaperSpigot',
+    'Spigot',
+    'TacoSpigot',
+    'Thermos',
+    'Torch',
     'Waterfall',
 ]
 
@@ -115,7 +128,7 @@ def cmd_list(*args):
     # Build and print table of files
     rows = [[
         '{} Files'.format(get_project_title(project)),
-        'MC Ver',
+        'MC Ver.',
         'Size',
     ]]
     for project_file in project_files:

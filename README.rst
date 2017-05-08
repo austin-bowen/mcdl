@@ -13,13 +13,16 @@ following projects:
 * `BungeeCord <https://www.spigotmc.org/>`_
 * Cauldron
 * `Genisys <https://itxtech.org/genisys/>`_
+* `Glowstone <https://www.glowstone.net/>`_
 * HexaCord
+* `HOSE <https://github.com/softpak/HOSE>`_
 * MCPC
 * `Nukkit <https://nukkit.io/>`_
 * `PaperSpigot <https://github.com/PaperMC/Paper>`_
 * `Spigot <https://www.spigotmc.org/>`_
 * `TacoSpigot <https://github.com/TacoSpigot/TacoSpigot>`_
 * `Thermos <https://cyberdynecc.github.io/Thermos/>`_
+* `Torch <https://github.com/TorchSpigot/Torch>`_
 * `Waterfall <https://github.com/WaterfallMC/Waterfall>`_
 
 Usage
@@ -77,7 +80,8 @@ Some time later (perhaps run by a cron job)...
 Installation (Linux)
 --------------------
 
-If you have `Python3 <https://www.python.org/downloads/>`_ installed, then you can use pip to install mcdl to your system:
+If you have `Python3 <https://www.python.org/downloads/>`_ installed, then you
+can use pip to install mcdl to your system:
 
 ::
 
