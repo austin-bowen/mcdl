@@ -72,7 +72,6 @@ Some time later (perhaps run by a cron job)...
 ::
 
     $ mcdl get spigot spigot-latest.jar /path/to/server/spigot.jar
-    Downloading Spigot file "spigot-latest.jar"...
     File "/path/to/server/spigot.jar" is already up-to-date
 
 Installation (Linux)

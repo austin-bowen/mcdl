@@ -26,12 +26,12 @@ __author__   = 'Austin Bowen <austin.bowen.314@gmail.com>'
 
 import os
 import requests
+from hashlib import sha256
 from packaging.version import parse as parse_version
 from progress.bar import IncrementalBar
 from six import print_
 from terminaltables import AsciiTable
 from time import time as wall_time
-from wsgiref.handlers import format_date_time
 
 # Return codes
 SUCCESS = 0
@@ -131,12 +131,12 @@ def cmd_list(*args):
     
     return SUCCESS
 
-def download_project_file(project_file, file_dest, force=False):
+def download_project_file(project_file, file_dest):
     '''Downloads the project file content and saves it to the destination.
     If the destination is a directory and not a file name, then the project
     file content is saved to a file named using the project file name.
     If the project file is not newer than the file at the destination, then
-    the project file content is not downloaded (unless forced).
+    the project file content is not downloaded.
     
     Prints progress and errors.
     
@@ -152,16 +152,24 @@ def download_project_file(project_file, file_dest, force=False):
             file_dest))
         return ERROR_FILE_PERMS
     
+    # Return if the hashes match, implying no change
+    try:
+        # Get hash of local file
+        with open(file_dest, 'rb') as f:
+            file_sha256_hash = sha256(f.read()).hexdigest().casefold()
+        
+        # Hashes match?
+        if (file_sha256_hash == project_file['hashes']['sha256'].casefold()):
+            print_('File "'+file_dest+'" is already up-to-date')
+            return SUCCESS
+        del file_sha256_hash
+    except FileNotFoundError:
+        pass
+    
     # Set up HTTP request headers
     headers = {
         'User-Agent': HTTP_USER_AGENT,
     }
-    if not force:
-        try:
-            headers['If-Modified-Since'] = \
-                format_date_time(os.path.getmtime(file_dest))
-        except FileNotFoundError:
-            pass
     
     # Start downloading the project file data
     print_('Downloading {} file "{}"...  '.format(
@@ -175,11 +183,6 @@ def download_project_file(project_file, file_dest, force=False):
         print_('ERROR: Download failed (HTTP status code '+\
             req.status_code+')')
         return ERROR_DOWNLOAD_FAILED
-    
-    # File at server is not newer than local file?
-    if (req.status_code == requests.codes.not_modified):
-        print_('File "'+file_dest+'" is already up-to-date')
-        return SUCCESS
     
     # Print the progress
     project_file_data = bytearray()
@@ -200,15 +203,13 @@ def download_project_file(project_file, file_dest, force=False):
     req.close()
     del bar, req, t0, t1
     
-    # Make sure the downloaded project file size matches the expected size
-    actual_size   = len(project_file_data)
-    expected_size = project_file['size']['bytes']
-    if (actual_size != expected_size):
-        msg = 'WARNING: Downloaded file size ({}B) does not match '+\
-            'expected file size ({}B)'
-        print_(msg.format(actual_size, expected_size))
-        del msg
-    del actual_size, expected_size
+    # Make sure the downloaded project file hash matches the expected hash
+    actual_hash   = sha256(project_file_data).hexdigest().casefold()
+    expected_hash = project_file['hashes']['sha256'].casefold()
+    if (actual_hash != expected_hash):
+        print_('WARNING: Downloaded file\'s SHA-256 hash value does not match'+\
+            ' the expected hash value')
+    del actual_hash, expected_hash
     
     # Save the project file to the destination
     print_('Saving to file "'+file_dest+'"...  ', end='', flush=True)
@@ -283,9 +284,9 @@ def get_project_title(project):
     >>> get_project_title('bungeecord')
     'BungeeCord'
     '''
-    project = project.lower()
+    project = project.casefold()
     for title in PROJECTS:
-        if (project == title.lower()): return title
+        if (project == title.casefold()): return title
     return None
 
 def print_projects():
@@ -294,14 +295,14 @@ def print_projects():
 
 def project_exists(project):
     '''Returns True if the given project is in PROJECTS (case insensitive).'''
-    return project.lower() in {p.lower() for p in PROJECTS}
+    return project.casefold() in {p.casefold() for p in PROJECTS}
 
 def main():
     import sys
     
     # Get command
     try:
-        cmd = sys.argv[1].lower()
+        cmd = sys.argv[1].casefold()
     except IndexError:
         cmd = None
     
