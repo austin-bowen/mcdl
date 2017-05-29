@@ -26,7 +26,7 @@ __author__   = 'Austin Bowen <austin.bowen.314@gmail.com>'
 
 import os
 import requests
-from hashlib import sha256
+from hashlib import sha1
 from packaging.version import parse as parse_version
 from progress.bar import IncrementalBar
 from six import print_
@@ -169,13 +169,13 @@ def download_project_file(project_file, file_dest):
     try:
         # Get hash of local file
         with open(file_dest, 'rb') as f:
-            file_sha256_hash = sha256(f.read()).hexdigest().casefold()
+            file_hash = sha1(f.read()).hexdigest().casefold()
         
         # Hashes match?
-        if (file_sha256_hash == project_file['hashes']['sha256'].casefold()):
+        if (file_hash == project_file['hashes']['sha1'].casefold()):
             print_('File "'+file_dest+'" is already up-to-date')
             return SUCCESS
-        del file_sha256_hash
+        del file_hash
     except FileNotFoundError:
         pass
     
@@ -217,10 +217,10 @@ def download_project_file(project_file, file_dest):
     del bar, req, t0, t1
     
     # Make sure the downloaded project file hash matches the expected hash
-    actual_hash   = sha256(project_file_data).hexdigest().casefold()
-    expected_hash = project_file['hashes']['sha256'].casefold()
+    actual_hash   = sha1(project_file_data).hexdigest().casefold()
+    expected_hash = project_file['hashes']['sha1'].casefold()
     if (actual_hash != expected_hash):
-        print_('WARNING: Downloaded file\'s SHA-256 hash value does not match'+\
+        print_('WARNING: Downloaded file\'s SHA-1 hash value does not match'+\
             ' the expected hash value')
     del actual_hash, expected_hash
     
