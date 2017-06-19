@@ -122,8 +122,11 @@ Now edit the upgrade-craftbukkit file as superuser with your favorite text edito
     
     mcdl get craftbukkit craftbukkit-latest.jar /path/to/server/craftbukkit.jar
     
-    # Optionally some command here to restart your Minecraft server
-    # ...
+    # File downloaded?
+    if [ $? -eq 0 ]; then
+        # Optionally, some command here to restart your Minecraft server
+        # ...
+    fi
 
 cron will now run the upgrade-craftbukkit file every week, downloading
 the latest CraftBukkit .jar file into your server's directory.
