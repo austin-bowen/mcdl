@@ -21,7 +21,7 @@
 '''mcdl.py - A script for downloading pre-built Minecraft software'''
 
 __filename__ = 'mcdl.py'
-__version__  = '0.2.1'
+__version__  = '0.3.1'
 __author__   = 'Austin Bowen <austin.bowen.314@gmail.com>'
 
 import os
