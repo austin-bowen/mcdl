@@ -35,9 +35,10 @@ from time import time as wall_time
 
 # Return codes
 SUCCESS = 0
-ERROR_INVALID_ARGS    = 1
-ERROR_FILE_PERMS      = 2
-ERROR_DOWNLOAD_FAILED = 3
+WARN_FILE_NOT_NEW     =  1
+ERROR_INVALID_ARGS    = -1
+ERROR_FILE_PERMS      = -2
+ERROR_DOWNLOAD_FAILED = -3
 
 HTTP_USER_AGENT = __filename__+'/'+__version__
 PROJECTS = [
@@ -174,7 +175,7 @@ def download_project_file(project_file, file_dest):
         # Hashes match?
         if (file_hash == project_file['hashes']['sha1'].casefold()):
             print_('File "'+file_dest+'" is already up-to-date')
-            return SUCCESS
+            return WARN_FILE_NOT_NEW
         del file_hash
     except FileNotFoundError:
         pass
@@ -328,15 +329,27 @@ def main():
         filename = os.path.basename(sys.argv[0])
         print_('Usage:')
         print_('  {} get  <project> <file> [dest]'.format(filename) +\
-              '  Download the project file')
+               '  Download the project file')
         print_('  {} list <project>              '.format(filename) +\
-              '  List the project files')
+               '  List the project files')
         
         print_()
         print_projects()
         
         print_('\nExample: Downloading the latest Spigot build')
         print_('  $ {} get spigot spigot-latest.jar'.format(filename))
+        
+        print_('\nReturn Codes:')
+        return_codes = (
+            (SUCCESS,               'Success'),
+            (WARN_FILE_NOT_NEW,     'Download unnecessary'),
+            (ERROR_INVALID_ARGS,    'Invalid arguments'),
+            (ERROR_FILE_PERMS,      'File access permission error'),
+            (ERROR_DOWNLOAD_FAILED, 'Download failed'),
+        )
+        for return_code in return_codes:
+            print_('{:4}: {}'.format(*return_code))
+        del return_codes
         
         print_('\nDownloads hosted by '+\
             'Yive\'s Mirror (no affiliation): https://yivesmirror.com/')
