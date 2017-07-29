@@ -6,24 +6,15 @@ A simple program for downloading pre-built Minecraft software, such as CraftBukk
 You can use mcdl to quickly download the latest .jar file for your
 favorite Minecraft server, grab a specific server API version for plugin
 development, etc. mcdl uses `Yive's Mirror <https://yivesmirror.com/>`_
-(no affiliation) to download pre-built Minecraft software related to the
-following projects:
+(no affiliation) to download pre-built Minecraft software for projects such as:
 
 * `Bukkit / CraftBukkit <https://bukkit.org/>`_
 * `BungeeCord <https://www.spigotmc.org/>`_
-* Cauldron
-* `Genisys <https://itxtech.org/genisys/>`_
-* `Glowstone <https://www.glowstone.net/>`_
-* HexaCord
-* `HOSE <https://github.com/softpak/HOSE>`_
-* MCPC
-* `Nukkit <https://nukkit.io/>`_
-* `PaperSpigot <https://github.com/PaperMC/Paper>`_
 * `Spigot <https://www.spigotmc.org/>`_
-* `TacoSpigot <https://github.com/TacoSpigot/TacoSpigot>`_
 * `Thermos <https://cyberdynecc.github.io/Thermos/>`_
 * `Torch <https://github.com/TorchSpigot/Torch>`_
 * `Waterfall <https://github.com/WaterfallMC/Waterfall>`_
+* ... and many more!
 
 Usage
 -----
@@ -42,7 +33,7 @@ Find and download a specific version of CraftBukkit
 ::
 
     $ mcdl list craftbukkit
-      CraftBukkit Files                     |  MC Ver      |  Size
+      Craftbukkit Files                     |  MC Ver      |  Size
     ----------------------------------------+--------------+------------
       craftbukkit-latest.jar                |  Latest      |  20.78MB
       craftbukkit-0.0.1-SNAPSHOT.1000.jar   |  1.7.3 Beta  |  8.11MB
@@ -130,8 +121,3 @@ Now edit the upgrade-craftbukkit file as superuser with your favorite text edito
 
 cron will now run the upgrade-craftbukkit file every week, downloading
 the latest CraftBukkit .jar file into your server's directory.
-
-To-do
------
-
--  Download list of available projects rather than hard-coding them.
