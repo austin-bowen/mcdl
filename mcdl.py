@@ -41,24 +41,6 @@ ERROR_FILE_PERMS      = -2
 ERROR_DOWNLOAD_FAILED = -3
 
 HTTP_USER_AGENT = __filename__+'/'+__version__
-PROJECTS = [
-    'Bukkit',
-    'BungeeCord',
-    'Cauldron',
-    'CraftBukkit',
-    'Genisys',
-    'Glowstone',
-    'HexaCord',
-    'HOSE',
-    'MCPC',
-    'Nukkit',
-    'PaperSpigot',
-    'Spigot',
-    'TacoSpigot',
-    'Thermos',
-    'Torch',
-    'Waterfall',
-]
 
 def cmd_get(*args):
     '''Handles command: get <project> <file> [dest]'''
@@ -98,7 +80,7 @@ def cmd_get(*args):
     # Project file DNE?
     if (project_file == None):
         print_('ERROR: {} file "{}" does not exist'.format(
-            get_project_title(project), project_file_name))
+            project, project_file_name))
         return ERROR_INVALID_ARGS
     
     # Download and save the project file and return the result
@@ -128,7 +110,7 @@ def cmd_list(*args):
     
     # Build and print table of files
     rows = [[
-        '{} Files'.format(get_project_title(project)),
+        '{} Files'.format(project.title()),
         'MC Ver.',
         'Size',
     ]]
@@ -270,15 +252,11 @@ def get_project_files(project):
         ...,
     ]
     '''
-    # Get project title
-    project_title = get_project_title(project)
     # Project DNE?
-    if not project_title: return None
+    if not project_exists(project): return None
     
     # Download list of project files
-    headers = {
-        'User-Agent': HTTP_USER_AGENT,
-    }
+    headers = {'User-Agent': HTTP_USER_AGENT}
     req = requests.get('https://yivesmirror.com/api/'+project, headers=headers)
     req_json = req.json()
     req.close(); del req
@@ -287,29 +265,36 @@ def get_project_files(project):
     project_files = []
     for entry in req_json:
         project_file = list(entry.values())[0]
-        project_file['project'] = project_title
+        project_file['project'] = project
         project_files.append(project_file)
     return project_files
 
-def get_project_title(project):
-    '''Returns the project name's titled version, or None if project DNE.
+def get_projects():
+    '''Returns the list of available projects.'''
+    # Return previously-existing list of projects, if it exists
+    global projects
+    try:
+        return projects
+    except NameError:
+        pass
     
-    Example:
-    >>> get_project_title('bungeecord')
-    'BungeeCord'
-    '''
-    project = project.casefold()
-    for title in PROJECTS:
-        if (project == title.casefold()): return title
-    return None
+    # Download list of projects
+    headers = {'User-Agent': HTTP_USER_AGENT}
+    req = requests.get('https://yivesmirror.com/api/invalid', headers=headers)
+    req_json = req.json()
+    req.close(); del req
+    
+    # Read list of projects
+    projects = req_json['validSoftwares']
+    projects.sort()
+    return projects
 
 def print_projects():
-    print_('Projects:')
-    for p in PROJECTS: print_('  '+p)
+    print_('Projects: {}'.format(' '.join(get_projects())))
 
 def project_exists(project):
-    '''Returns True if the given project is in PROJECTS (case insensitive).'''
-    return project.casefold() in {p.casefold() for p in PROJECTS}
+    '''Returns True if the given project is available.'''
+    return project.casefold() in {p.casefold() for p in get_projects()}
 
 def main():
     import sys
@@ -336,8 +321,9 @@ def main():
         print_()
         print_projects()
         
-        print_('\nExample: Downloading the latest Spigot build')
-        print_('  $ {} get spigot spigot-latest.jar'.format(filename))
+        print_('\nExample: Downloading a Spigot 1.12 snapshot')
+        print_('  $ {} get spigot spigot-1.12-R0.1-SNAPSHOT-b1372.jar'.format(
+            filename))
         
         print_('\nReturn Codes:')
         return_codes = (
