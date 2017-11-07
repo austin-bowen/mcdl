@@ -1,6 +1,10 @@
 mcdl - Minecraft Downloader
 ===========================
 
+    WARNING: Yive has removed the API from `Yive's Mirror <https://yivesmirror.com/>`_, effectively rendering
+    mcdl useless from now on... :'(  However, Minecraft software can still be downloaded from the site directly.
+    I will keep this GIT repository up, in the hopes that he re-establishes the API.
+
 A simple program for downloading pre-built Minecraft software, such as CraftBukkit and Spigot.
 
 You can use mcdl to quickly download the latest .jar file for your
