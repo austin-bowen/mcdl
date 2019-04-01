@@ -19,6 +19,8 @@
 # SOFTWARE.
 
 """mcdl.py - A script for downloading pre-built Minecraft software."""
+from functools import lru_cache
+from typing import List
 
 __filename__ = 'mcdl.py'
 __version__ = '0.4.0'
@@ -232,75 +234,30 @@ def get_project_file_named(name, project_files):
     return None
 
 
-def get_project_files(project):
+@lru_cache(maxsize=10)
+def get_project_files(project) -> List[str]:
     """
-    Returns a list of files available for the given project,
-    or None if the project does not exist.
-
-    Example:
-    >>> get_project_files('spigot')
-    [
-        {
-            'name'   : 'spigot-latest.jar',
-            'project': 'Spigot',
-            'version': {
-                'minecraft': '...'
-            },
-            'size': {
-                'human': '23.40MB',
-                'bytes': 24539208
-            },
-            'date': {
-                'human': 'March 24, 2017',
-                'epoch': 1493893504,
-            },
-            'urls': {
-                'paid': 'http://...',
-                'free': 'http://...'
-            }
-        },
-        ...,
-    ]
+    Returns a list of files available for the given project.
     """
 
     # Project DNE?
     if not project_exists(project):
-        return None
+        raise ValueError(f'Project {repr(project)} does not exist.')
 
     # Download list of project files
     headers = {'User-Agent': HTTP_USER_AGENT}
-    with requests.get('https://yivesmirror.com/api/' + project, headers=headers) as req:
-        req_json = req.json()
-    del req
-
-    # Build and return list of project files
-    project_files = []
-    for entry in req_json:
-        project_file = list(entry.values())[0]
-        project_file['project'] = project
-        project_files.append(project_file)
-    return project_files
+    with requests.get(f'https://yivesmirror.com/api/list/{project}', headers=headers) as req:
+        return req.json()
 
 
-def get_projects():
+@lru_cache(maxsize=1)
+def get_projects() -> List[str]:
     """Returns the list of available projects."""
-
-    # Return previously-existing list of projects, if it exists
-    global projects
-    try:
-        return projects
-    except NameError:
-        pass
 
     # Download list of projects
     headers = {'User-Agent': HTTP_USER_AGENT}
     with requests.get('https://yivesmirror.com/api/list/all', headers=headers) as req:
-        projects = req.json()
-    del req
-
-    # Return sorted list of projects
-    projects.sort()
-    return projects
+        return sorted(req.json())
 
 
 def print_projects():
