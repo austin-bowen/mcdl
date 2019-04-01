@@ -18,13 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-'''mcdl.py - A script for downloading pre-built Minecraft software'''
+"""mcdl.py - A script for downloading pre-built Minecraft software."""
 
 __filename__ = 'mcdl.py'
 __version__ = '0.4.0'
 __author__ = 'Austin Bowen <austin.bowen.314@gmail.com>'
 
 import os
+import sys
 from hashlib import sha1
 from time import time as wall_time
 
@@ -45,7 +46,8 @@ HTTP_USER_AGENT = __filename__ + '/' + __version__
 
 
 def cmd_get(*args):
-    '''Handles command: get <project> <file> [dest]'''
+    """Handles command: get <project> <file> [dest]"""
+
     # Get the project name
     try:
         project = args[0]
@@ -72,7 +74,7 @@ def cmd_get(*args):
     # Get project files
     project_files = get_project_files(project)
     # Project DNE?
-    if (project_files == None):
+    if project_files is None:
         print_('ERROR: Project "' + project + '" does not exist\n')
         print_projects()
         return ERROR_INVALID_ARGS
@@ -80,7 +82,7 @@ def cmd_get(*args):
     # Get project file
     project_file = get_project_file_named(project_file_name, project_files)
     # Project file DNE?
-    if (project_file == None):
+    if project_file is None:
         print_('ERROR: {} file "{}" does not exist'.format(
             project, project_file_name))
         return ERROR_INVALID_ARGS
@@ -90,7 +92,8 @@ def cmd_get(*args):
 
 
 def cmd_list(*args):
-    '''Handles command: list <project>'''
+    """Handles command: list <project>"""
+
     # Get project
     try:
         project = args[0]
@@ -102,7 +105,7 @@ def cmd_list(*args):
     # Get project files
     project_files = get_project_files(project)
     # Project DNE?
-    if (project_files == None):
+    if project_files is None:
         print_('ERROR: Project "' + project + '" does not exist\n')
         print_projects()
         return ERROR_INVALID_ARGS
@@ -132,16 +135,16 @@ def cmd_list(*args):
 
 
 def download_project_file(project_file, file_dest):
-    '''Downloads the project file content and saves it to the destination.
+    """Downloads the project file content and saves it to the destination.
     If the destination is a directory and not a file name, then the project
     file content is saved to a file named using the project file name.
     If the project file is not newer than the file at the destination, then
     the project file content is not downloaded.
-    
+
     Prints progress and errors.
-    
+
     Returns: SUCCESS, ERROR_FILE_PERMS, or ERROR_DOWNLOAD_FAILED.
-    '''
+    """
     # File destination is a directory?  Append the project file name.
     if os.path.isdir(file_dest):
         file_dest = os.path.join(file_dest, project_file['name'])
@@ -159,7 +162,7 @@ def download_project_file(project_file, file_dest):
             file_hash = sha1(f.read()).hexdigest().casefold()
 
         # Hashes match?
-        if (file_hash == project_file['hashes']['sha1'].casefold()):
+        if file_hash == project_file['hashes']['sha1'].casefold():
             print_('File "' + file_dest + '" is already up-to-date')
             return WARN_FILE_NOT_NEW
         del file_hash
@@ -180,23 +183,21 @@ def download_project_file(project_file, file_dest):
 
     # Failed to create request?
     if not req:
-        print_('ERROR: Download failed (HTTP status code ' + \
-               req.status_code + ')')
+        print_(f'ERROR: Download failed (HTTP status code {req.status_code})')
         return ERROR_DOWNLOAD_FAILED
 
     # Print the progress
     project_file_data = bytearray()
     bar = IncrementalBar(' ', max=project_file['size']['bytes'],
-                         suffix='%(percent)d%% of ' + project_file['size']['human'] + \
-                                ' (ETA %(eta_td)s)')
-    t0 = 0
+                         suffix='%(percent)d%% of ' + project_file['size']['human'] + ' (ETA %(eta_td)s)')
+    t0 = t1 = 0
     for chunk in req.iter_content(chunk_size=8192):
         # Add new chunk to the project file data
         project_file_data.extend(chunk)
 
         # Update progress bar every 0.5 seconds or at end of download
         t1 = wall_time()
-        if ((t1 - t0) >= 0.5 or len(chunk) < 8192):
+        if (t1 - t0) >= 0.5 or len(chunk) < 8192:
             bar.goto(len(project_file_data))
             t0 = t1
     bar.finish()
@@ -206,9 +207,8 @@ def download_project_file(project_file, file_dest):
     # Make sure the downloaded project file hash matches the expected hash
     actual_hash = sha1(project_file_data).hexdigest().casefold()
     expected_hash = project_file['hashes']['sha1'].casefold()
-    if (actual_hash != expected_hash):
-        print_('WARNING: Downloaded file\'s SHA-1 hash value does not match' + \
-               ' the expected hash value')
+    if actual_hash != expected_hash:
+        print_('WARNING: Downloaded file\'s SHA-1 hash value does not match the expected hash value')
     del actual_hash, expected_hash
 
     # Save the project file to the destination
@@ -221,18 +221,20 @@ def download_project_file(project_file, file_dest):
 
 
 def get_project_file_named(name, project_files):
-    '''Returns the project file for the given project, or None if either
+    """Returns the project file for the given project, or None if either
     the project or project file does not exist.
-    '''
+    """
     for project_file in project_files:
-        if (project_file['name'] == name): return project_file
+        if project_file['name'] == name:
+            return project_file
     return None
 
 
 def get_project_files(project):
-    '''Returns a list of files available for the given project,
+    """
+    Returns a list of files available for the given project,
     or None if the project does not exist.
-    
+
     Example:
     >>> get_project_files('spigot')
     [
@@ -257,15 +259,15 @@ def get_project_files(project):
         },
         ...,
     ]
-    '''
+    """
     # Project DNE?
-    if not project_exists(project): return None
+    if not project_exists(project):
+        return None
 
     # Download list of project files
     headers = {'User-Agent': HTTP_USER_AGENT}
-    req = requests.get('https://yivesmirror.com/api/' + project, headers=headers)
-    req_json = req.json()
-    req.close();
+    with requests.get('https://yivesmirror.com/api/' + project, headers=headers) as req:
+        req_json = req.json()
     del req
 
     # Build and return list of project files
@@ -278,7 +280,8 @@ def get_project_files(project):
 
 
 def get_projects():
-    '''Returns the list of available projects.'''
+    """Returns the list of available projects."""
+
     # Return previously-existing list of projects, if it exists
     global projects
     try:
@@ -288,9 +291,8 @@ def get_projects():
 
     # Download list of projects
     headers = {'User-Agent': HTTP_USER_AGENT}
-    req = requests.get('https://yivesmirror.com/api/invalid', headers=headers)
-    req_json = req.json()
-    req.close();
+    with requests.get('https://yivesmirror.com/api/invalid', headers=headers) as req:
+        req_json = req.json()
     del req
 
     # Read list of projects
@@ -304,13 +306,11 @@ def print_projects():
 
 
 def project_exists(project):
-    '''Returns True if the given project is available.'''
+    """Returns True if the given project is available."""
     return project.casefold() in {p.casefold() for p in get_projects()}
 
 
 def main():
-    import sys
-
     # Get command
     try:
         cmd = sys.argv[1].casefold()
@@ -320,15 +320,14 @@ def main():
     # Command not given or not recognized?
     if cmd not in {'get', 'list'}:
         # Command not recognized?
-        if (cmd != None): print_('ERROR: Unrecognized command "' + cmd + '"')
+        if cmd is not None:
+            print_('ERROR: Unrecognized command "' + cmd + '"')
 
         # Print usage
         filename = os.path.basename(sys.argv[0])
         print_('Usage:')
-        print_('  {} get  <project> <file> [dest]'.format(filename) + \
-               '  Download the project file')
-        print_('  {} list <project>              '.format(filename) + \
-               '  List the project files')
+        print_('  {} get  <project> <file> [dest]'.format(filename) + '  Download the project file')
+        print_('  {} list <project>              '.format(filename) + '  List the project files')
 
         print_()
         print_projects()
@@ -349,11 +348,10 @@ def main():
             print_('{:4}: {}'.format(*return_code))
         del return_codes
 
-        print_('\nDownloads hosted by ' + \
-               'Yive\'s Mirror (no affiliation): https://yivesmirror.com/')
+        print_('\nDownloads hosted by ' + 'Yive\'s Mirror (no affiliation): https://yivesmirror.com/')
         print_('View project source on GitHub: https://github.com/SaltyHash/mcdl')
 
-        sys.exit(SUCCESS if (cmd == None) else ERROR_INVALID_ARGS)
+        sys.exit(SUCCESS if cmd is None else ERROR_INVALID_ARGS)
 
     # Get the handler function for the command and execute it
     try:
@@ -365,5 +363,5 @@ def main():
     sys.exit(result)
 
 
-if (__name__ == '__main__'):
+if __name__ == '__main__':
     main()
