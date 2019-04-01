@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 packaging = "*"
 requests = "*"
-terminaltables = "*"
 progress = "*"
 
 [dev-packages]

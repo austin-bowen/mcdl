@@ -32,14 +32,13 @@ from hashlib import sha1
 from time import time as wall_time
 
 import requests
-from packaging.version import parse as parse_version
 from progress.bar import IncrementalBar
 from six import print_
-from terminaltables import AsciiTable
 
 # Return codes
 SUCCESS = 0
-WARN_FILE_NOT_NEW = 1
+ERROR_GENERAL = 1
+WARN_FILE_NOT_NEW = 2
 ERROR_INVALID_ARGS = -1
 ERROR_FILE_PERMS = -2
 ERROR_DOWNLOAD_FAILED = -3
@@ -100,38 +99,18 @@ def cmd_list(*args):
     try:
         project = args[0]
     except IndexError:
-        print_('ERROR: No project given\n')
+        print_('ERROR: No project specified.\n')
         print_projects()
         return ERROR_INVALID_ARGS
 
     # Get project files
     project_files = get_project_files(project)
-    # Project DNE?
-    if project_files is None:
-        print_('ERROR: Project "' + project + '" does not exist\n')
-        print_projects()
-        return ERROR_INVALID_ARGS
 
-    # Sort project files by version ascending
-    project_files = sorted(project_files,
-                           key=lambda pf: parse_version(pf['name']))
+    if not project_files:
+        print(f'ERROR: No files found for project {project}.')
+        return ERROR_GENERAL
 
-    # Build and print table of files
-    rows = [[
-        '{} Files'.format(project.title()),
-        'MC Ver.',
-        'Size',
-    ]]
-    for project_file in project_files:
-        rows.append([
-            project_file['name'],
-            project_file['version']['minecraft'],
-            project_file['size']['human'],
-        ])
-    table = AsciiTable(rows)
-    table.outer_border = False
-    table.padding_left = table.padding_right = 2
-    print_(table.table)
+    [print(file) for file in project_files]
 
     return SUCCESS
 
@@ -298,6 +277,7 @@ def main():
         print_('\nReturn Codes:')
         return_codes = (
             (SUCCESS, 'Success'),
+            (ERROR_GENERAL, 'General error'),
             (WARN_FILE_NOT_NEW, 'Download unnecessary'),
             (ERROR_INVALID_ARGS, 'Invalid arguments'),
             (ERROR_FILE_PERMS, 'File access permission error'),
