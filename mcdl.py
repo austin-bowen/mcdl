@@ -19,8 +19,6 @@
 # SOFTWARE.
 
 """mcdl.py - A script for downloading pre-built Minecraft software."""
-from functools import lru_cache
-from typing import List
 
 __filename__ = 'mcdl.py'
 __version__ = '0.4.0'
@@ -28,8 +26,10 @@ __author__ = 'Austin Bowen <austin.bowen.314@gmail.com>'
 
 import os
 import sys
+from functools import lru_cache
 from hashlib import sha1
 from time import time as wall_time
+from typing import List, Optional
 
 import requests
 from progress.bar import IncrementalBar
@@ -46,7 +46,7 @@ ERROR_DOWNLOAD_FAILED = -3
 HTTP_USER_AGENT = __filename__ + '/' + __version__
 
 
-def cmd_get(*args):
+def cmd_get(*args) -> int:
     """Handles command: get <project> <file> [dest]"""
 
     # Get the project name
@@ -92,7 +92,7 @@ def cmd_get(*args):
     return download_project_file(project_file, file_dest)
 
 
-def cmd_list(*args):
+def cmd_list(*args) -> int:
     """Handles command: list <project>"""
 
     # Get project
@@ -115,7 +115,7 @@ def cmd_list(*args):
     return SUCCESS
 
 
-def download_project_file(project_file, file_dest):
+def download_project_file(project_file, file_dest) -> int:
     """Downloads the project file content and saves it to the destination.
     If the destination is a directory and not a file name, then the project
     file content is saved to a file named using the project file name.
@@ -203,7 +203,7 @@ def download_project_file(project_file, file_dest):
     return SUCCESS
 
 
-def get_project_file_named(name, project_files):
+def get_project_file_named(name, project_files) -> Optional[str]:
     """Returns the project file for the given project, or None if either
     the project or project file does not exist.
     """
@@ -239,16 +239,16 @@ def get_projects() -> List[str]:
         return sorted(req.json())
 
 
-def print_projects():
+def print_projects() -> None:
     print_('Projects: {}'.format(', '.join(get_projects())))
 
 
-def project_exists(project):
+def project_exists(project) -> bool:
     """Returns True if the given project is available."""
     return project.casefold() in {p.casefold() for p in get_projects()}
 
 
-def main():
+def main() -> None:
     # Get command
     try:
         cmd = sys.argv[1].casefold()
