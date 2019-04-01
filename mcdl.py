@@ -175,10 +175,9 @@ def download_project_file(project_file, file_dest):
     }
 
     # Start downloading the project file data
-    print_('Downloading {} file "{}"...  '.format(
-        project_file['project'], project_file['name']))
-    req = requests.get(project_file['urls']['free'],
-                       headers=headers, stream=True)
+    print_('Downloading {} file "{}"...  '.format(project_file['project'], project_file['name']))
+    # TODO: Use `with` block
+    req = requests.get(project_file['urls']['free'], headers=headers, stream=True)
     del headers
 
     # Failed to create request?
@@ -186,22 +185,25 @@ def download_project_file(project_file, file_dest):
         print_(f'ERROR: Download failed (HTTP status code {req.status_code})')
         return ERROR_DOWNLOAD_FAILED
 
-    # Print the progress
-    project_file_data = bytearray()
-    bar = IncrementalBar(' ', max=project_file['size']['bytes'],
-                         suffix='%(percent)d%% of ' + project_file['size']['human'] + ' (ETA %(eta_td)s)')
-    t0 = t1 = 0
-    for chunk in req.iter_content(chunk_size=8192):
-        # Add new chunk to the project file data
-        project_file_data.extend(chunk)
+    try:
+        # Print the progress
+        project_file_data = bytearray()
+        bar = IncrementalBar(' ', max=project_file['size']['bytes'],
+                             suffix='%(percent)d%% of ' + project_file['size']['human'] + ' (ETA %(eta_td)s)')
+        t0 = t1 = 0
+        for chunk in req.iter_content(chunk_size=8192):
+            # Add new chunk to the project file data
+            project_file_data.extend(chunk)
 
-        # Update progress bar every 0.5 seconds or at end of download
-        t1 = wall_time()
-        if (t1 - t0) >= 0.5 or len(chunk) < 8192:
-            bar.goto(len(project_file_data))
-            t0 = t1
-    bar.finish()
-    req.close()
+            # Update progress bar every 0.5 seconds or at end of download
+            t1 = wall_time()
+            if (t1 - t0) >= 0.5 or len(chunk) < 8192:
+                bar.goto(len(project_file_data))
+                t0 = t1
+
+        bar.finish()
+    finally:
+        req.close()
     del bar, req, t0, t1
 
     # Make sure the downloaded project file hash matches the expected hash
@@ -260,6 +262,7 @@ def get_project_files(project):
         ...,
     ]
     """
+
     # Project DNE?
     if not project_exists(project):
         return None
@@ -291,18 +294,17 @@ def get_projects():
 
     # Download list of projects
     headers = {'User-Agent': HTTP_USER_AGENT}
-    with requests.get('https://yivesmirror.com/api/invalid', headers=headers) as req:
-        req_json = req.json()
+    with requests.get('https://yivesmirror.com/api/list/all', headers=headers) as req:
+        projects = req.json()
     del req
 
-    # Read list of projects
-    projects = req_json['validSoftwares']
+    # Return sorted list of projects
     projects.sort()
     return projects
 
 
 def print_projects():
-    print_('Projects: {}'.format(' '.join(get_projects())))
+    print_('Projects: {}'.format(', '.join(get_projects())))
 
 
 def project_exists(project):
