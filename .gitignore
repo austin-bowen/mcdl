@@ -93,3 +93,6 @@ pip-selfcheck.json
 bin/
 include/
 share/
+
+# PyCharm IDE
+.idea/
