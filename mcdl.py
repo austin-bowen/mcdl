@@ -18,32 +18,64 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""mcdl.py - A script for downloading pre-built Minecraft software."""
+"""
+mcdl.py - A script for downloading pre-built Minecraft software.
+
+TODO: Use argparse.
+TODO: Consider error cases.
+"""
 
 __filename__ = 'mcdl.py'
 __version__ = '0.4.0'
 __author__ = 'Austin Bowen <austin.bowen.314@gmail.com>'
 
 import os
+import shutil
 import sys
 from functools import lru_cache
-from hashlib import sha1
-from time import time as wall_time
-from typing import List, Optional
+from multiprocessing.pool import Pool
+from tempfile import TemporaryDirectory
+from typing import List
 
 import requests
+from packaging.version import parse as parse_version
 from progress.bar import IncrementalBar
 from six import print_
+from terminaltables import AsciiTable
 
 # Return codes
 SUCCESS = 0
 ERROR_GENERAL = 1
-WARN_FILE_NOT_NEW = 2
 ERROR_INVALID_ARGS = -1
 ERROR_FILE_PERMS = -2
 ERROR_DOWNLOAD_FAILED = -3
 
+API_ROOT = 'https://yivesmirror.com/api/'
 HTTP_USER_AGENT = __filename__ + '/' + __version__
+MAX_PARALLEL_REQUESTS = 10
+REQUEST_HEADERS = {'User-Agent': HTTP_USER_AGENT}
+
+
+class ProjectFile:
+    def __init__(self, json: dict):
+        self.size_human = json["size_human"]
+        self.size_bytes = json["size_bytes"]
+        self.file_name = json["file_name"]
+        self.date_human = json["date_human"]
+        self.date_epoch = json["date_epoch"]
+        self.mc_version = json["mc_version"]
+        self.direct_link = json["direct_link"]
+
+    def __str__(self):
+        return self.file_name
+
+
+def _get_request(resource: str, **kwargs) -> requests.Response:
+    return _get_request_raw(API_ROOT + resource, **kwargs)
+
+
+def _get_request_raw(url: str, **kwargs) -> requests.Response:
+    return requests.get(url, headers=REQUEST_HEADERS, **kwargs)
 
 
 def cmd_get(*args) -> int:
@@ -59,7 +91,7 @@ def cmd_get(*args) -> int:
 
     # Get the project file name
     try:
-        project_file_name = args[1]
+        file_name = args[1]
     except IndexError:
         print_('ERROR: No project file given')
         return ERROR_INVALID_ARGS
@@ -70,53 +102,57 @@ def cmd_get(*args) -> int:
     except IndexError:
         file_dest = os.curdir
     if os.path.isdir(file_dest):
-        file_dest = os.path.join(file_dest, project_file_name)
-
-    # Get project files
-    project_files = get_project_files(project)
-    # Project DNE?
-    if project_files is None:
-        print_('ERROR: Project "' + project + '" does not exist\n')
-        print_projects()
-        return ERROR_INVALID_ARGS
+        file_dest = os.path.join(file_dest, file_name)
 
     # Get project file
-    project_file = get_project_file_named(project_file_name, project_files)
+    project_file = get_project_file(project, file_name)
     # Project file DNE?
     if project_file is None:
         print_('ERROR: {} file "{}" does not exist'.format(
-            project, project_file_name))
+            project, file_name))
         return ERROR_INVALID_ARGS
 
     # Download and save the project file and return the result
-    return download_project_file(project_file, file_dest)
+    return download_project_file(project, project_file, file_dest)
 
 
-def cmd_list(*args) -> int:
+def cmd_list(*args):
     """Handles command: list <project>"""
 
     # Get project
     try:
         project = args[0]
     except IndexError:
-        print_('ERROR: No project specified.\n')
+        print_('ERROR: No project given\n')
         print_projects()
         return ERROR_INVALID_ARGS
 
     # Get project files
     project_files = get_project_files(project)
+    # Project DNE?
+    if project_files is None:
+        print_(f'ERROR: Project {repr(project)} does not exist.\n')
+        print_projects()
+        return ERROR_INVALID_ARGS
 
-    if not project_files:
-        print(f'ERROR: No files found for project {project}.')
-        return ERROR_GENERAL
+    # Sort project files by version ascending
+    project_files = sorted(project_files, key=lambda pf: parse_version(pf.file_name))
 
-    [print(file) for file in project_files]
+    # Build and print table of files
+    rows = [(f'{project.title()} Files', 'MC Ver.', 'Size')]
+    rows += [(pf.file_name, pf.mc_version, pf.size_human) for pf in project_files]
+    table = AsciiTable(rows)
+    table.outer_border = False
+    table.padding_left = table.padding_right = 2
+    print()
+    print_(table.table)
 
     return SUCCESS
 
 
-def download_project_file(project_file, file_dest) -> int:
-    """Downloads the project file content and saves it to the destination.
+def download_project_file(project: str, project_file: ProjectFile, file_dest: str) -> int:
+    """
+    Downloads the project file content and saves it to the destination.
     If the destination is a directory and not a file name, then the project
     file content is saved to a file named using the project file name.
     If the project file is not newer than the file at the destination, then
@@ -126,95 +162,57 @@ def download_project_file(project_file, file_dest) -> int:
 
     Returns: SUCCESS, ERROR_FILE_PERMS, or ERROR_DOWNLOAD_FAILED.
     """
+
     # File destination is a directory?  Append the project file name.
     if os.path.isdir(file_dest):
-        file_dest = os.path.join(file_dest, project_file['name'])
+        file_dest = os.path.join(file_dest, project_file.file_name)
 
     # Do not have write permission for the file destination?
     if not os.access(os.path.dirname(os.path.abspath(file_dest)), os.W_OK):
-        print_('ERROR: Do not have write permission for destination "{}"'.format(
-            file_dest))
+        print_(f'ERROR: Do not have write permission for destination {repr(file_dest)}')
         return ERROR_FILE_PERMS
 
-    # Return if the hashes match, implying no change
-    try:
-        # Get hash of local file
-        with open(file_dest, 'rb') as f:
-            file_hash = sha1(f.read()).hexdigest().casefold()
-
-        # Hashes match?
-        if file_hash == project_file['hashes']['sha1'].casefold():
-            print_('File "' + file_dest + '" is already up-to-date')
-            return WARN_FILE_NOT_NEW
-        del file_hash
-    except FileNotFoundError:
-        pass
-
-    # Set up HTTP request headers
-    headers = {
-        'User-Agent': HTTP_USER_AGENT,
-    }
-
     # Start downloading the project file data
-    print_('Downloading {} file "{}"...  '.format(project_file['project'], project_file['name']))
-    # TODO: Use `with` block
-    req = requests.get(project_file['urls']['free'], headers=headers, stream=True)
-    del headers
+    print_(f'Downloading {project.title()} file {repr(project_file.file_name)}...')
 
-    # Failed to create request?
-    if not req:
-        print_(f'ERROR: Download failed (HTTP status code {req.status_code})')
-        return ERROR_DOWNLOAD_FAILED
+    with TemporaryDirectory(prefix=__filename__ + '-') as tmp_dir:
 
-    try:
-        # Print the progress
-        project_file_data = bytearray()
-        bar = IncrementalBar(' ', max=project_file['size']['bytes'],
-                             suffix='%(percent)d%% of ' + project_file['size']['human'] + ' (ETA %(eta_td)s)')
-        t0 = t1 = 0
-        for chunk in req.iter_content(chunk_size=8192):
-            # Add new chunk to the project file data
-            project_file_data.extend(chunk)
+        # Download the file to a tmp file
+        with IncrementalBar(
+                ' ',
+                max=project_file.size_bytes,
+                suffix=f'%(percent)d%% of {project_file.size_human} (ETA %(eta_td)s)'
+        ) as bar, \
+                open(os.path.join(tmp_dir, project_file.file_name), 'ab') as tmp_file, \
+                _get_request_raw(project_file.direct_link, stream=True) as response:
 
-            # Update progress bar every 0.5 seconds or at end of download
-            t1 = wall_time()
-            if (t1 - t0) >= 0.5 or len(chunk) < 8192:
-                bar.goto(len(project_file_data))
-                t0 = t1
+            chunk_size = 2 ** 16
+            bytes_written = 0
+            for chunk in response.iter_content(chunk_size=chunk_size):
+                bytes_written += tmp_file.write(chunk)
+                bar.goto(bytes_written)
 
-        bar.finish()
-    finally:
-        req.close()
-    del bar, req, t0, t1
+        # Make sure file was downloaded completely
+        if bytes_written != project_file.size_bytes:
+            print_(f'ERROR: Received {bytes_written} bytes, but expected {project_file.size_bytes}.')
+            return ERROR_DOWNLOAD_FAILED
 
-    # Make sure the downloaded project file hash matches the expected hash
-    actual_hash = sha1(project_file_data).hexdigest().casefold()
-    expected_hash = project_file['hashes']['sha1'].casefold()
-    if actual_hash != expected_hash:
-        print_('WARNING: Downloaded file\'s SHA-1 hash value does not match the expected hash value')
-    del actual_hash, expected_hash
-
-    # Save the project file to the destination
-    print_('Saving to file "' + file_dest + '"...  ', end='', flush=True)
-    with open(file_dest, 'wb') as f:
-        f.write(project_file_data)
-    print_('Done.')
+        # Move tmp file to destination
+        print_(f'Saving to file {repr(file_dest)}...  ', end='', flush=True)
+        shutil.move(tmp_file.name, file_dest)
+        print('Done.')
 
     return SUCCESS
 
 
-def get_project_file_named(name, project_files) -> Optional[str]:
-    """Returns the project file for the given project, or None if either
-    the project or project file does not exist.
-    """
-    for project_file in project_files:
-        if project_file['name'] == name:
-            return project_file
-    return None
+@lru_cache()
+def get_project_file(project: str, file_name: str) -> ProjectFile:
+    with _get_request(f'file/{project}/{file_name}') as req:
+        return ProjectFile(req.json())
 
 
-@lru_cache(maxsize=10)
-def get_project_files(project) -> List[str]:
+@lru_cache()
+def get_project_file_names(project) -> List[str]:
     """
     Returns a list of files available for the given project.
     """
@@ -224,18 +222,28 @@ def get_project_files(project) -> List[str]:
         raise ValueError(f'Project {repr(project)} does not exist.')
 
     # Download list of project files
-    headers = {'User-Agent': HTTP_USER_AGENT}
-    with requests.get(f'https://yivesmirror.com/api/list/{project}', headers=headers) as req:
+    with _get_request(f'list/{project}') as req:
         return req.json()
 
 
-@lru_cache(maxsize=1)
+@lru_cache()
+def get_project_files(project: str) -> List[ProjectFile]:
+    file_names = get_project_file_names(project)
+    print(f'Getting info for {len(file_names)} {project} files...')
+
+    with Pool(MAX_PARALLEL_REQUESTS) as pool:
+        return pool.starmap(
+            get_project_file,
+            [(project, file_name) for file_name in file_names]
+        )
+
+
+@lru_cache()
 def get_projects() -> List[str]:
     """Returns the list of available projects."""
 
     # Download list of projects
-    headers = {'User-Agent': HTTP_USER_AGENT}
-    with requests.get('https://yivesmirror.com/api/list/all', headers=headers) as req:
+    with _get_request('list/all') as req:
         return sorted(req.json())
 
 
@@ -243,6 +251,7 @@ def print_projects() -> None:
     print_('Projects: {}'.format(', '.join(get_projects())))
 
 
+@lru_cache()
 def project_exists(project) -> bool:
     """Returns True if the given project is available."""
     return project.casefold() in {p.casefold() for p in get_projects()}
@@ -278,7 +287,6 @@ def main() -> None:
         return_codes = (
             (SUCCESS, 'Success'),
             (ERROR_GENERAL, 'General error'),
-            (WARN_FILE_NOT_NEW, 'Download unnecessary'),
             (ERROR_INVALID_ARGS, 'Invalid arguments'),
             (ERROR_FILE_PERMS, 'File access permission error'),
             (ERROR_DOWNLOAD_FAILED, 'Download failed'),
